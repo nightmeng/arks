@@ -229,8 +229,10 @@ func (r *ArksDisaggregatedApplicationReconciler) reconcile(ctx context.Context, 
 		if apierrors.IsNotFound(err) {
 			application.Status.Phase = string(arksv1.ArksApplicationPhaseFailed)
 			r.updateApplicationCondition(application, arksv1.ArksApplicationLoaded, corev1.ConditionFalse, "ModelNotExist", "The referenced model doesn't exist")
+			klog.Infof("application %s/%s: model (%s) doesn't exist", application.Namespace, application.Name, application.Spec.Model.Name)
 			return ctrl.Result{}, nil
 		}
+		klog.Infof("application %s/%s: query model (%s) status error: %q", application.Namespace, application.Name, application.Spec.Model.Name, err)
 		return ctrl.Result{}, err
 	}
 
