@@ -102,8 +102,11 @@ type ArksDisaggregatedApplicationSpec struct {
 }
 
 type ArksComponentStatus struct {
+	// +optional
 	Replicas        int32 `json:"replicas"`
+	// +optional
 	ReadyReplicas   int32 `json:"readyReplicas"`
+	// +optional
 	UpdatedReplicas int32 `json:"updatedReplicas"`
 }
 

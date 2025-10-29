@@ -18158,10 +18158,6 @@ spec:
                   updatedReplicas:
                     format: int32
                     type: integer
-                required:
-                - readyReplicas
-                - replicas
-                - updatedReplicas
                 type: object
               phase:
                 type: string
@@ -18176,10 +18172,6 @@ spec:
                   updatedReplicas:
                     format: int32
                     type: integer
-                required:
-                - readyReplicas
-                - replicas
-                - updatedReplicas
                 type: object
               router:
                 properties:
@@ -18192,10 +18184,6 @@ spec:
                   updatedReplicas:
                     format: int32
                     type: integer
-                required:
-                - readyReplicas
-                - replicas
-                - updatedReplicas
                 type: object
             type: object
         type: object
