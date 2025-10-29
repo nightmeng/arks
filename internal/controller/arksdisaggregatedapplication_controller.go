@@ -87,7 +87,7 @@ func (r *ArksDisaggregatedApplicationReconciler) Reconcile(ctx context.Context, 
 		return r.remove(ctx, application)
 	}
 
-	patch := client.MergeFrom(application)
+	patch := client.MergeFrom(application.DeepCopy())
 
 	// reconcile model
 	result, err := r.reconcile(ctx, application)
