@@ -79,13 +79,11 @@ func (r *ArksModelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return r.remove(ctx, model)
 	}
 
-	patch := client.MergeFrom(model.DeepCopy())
-
 	// reconcile model
 	result, err := r.reconcile(ctx, model)
 
 	// update application status
-	if err := r.Client.Status().Patch(ctx, model, patch); err != nil {
+	if err := r.Client.Status().Update(ctx, model); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to update status for %s/%s (%s): %q", model.Namespace, model.Name, model.UID, err)
 	}
 
@@ -195,7 +193,7 @@ func (r *ArksModelReconciler) reconcile(ctx context.Context, model *arksv1.ArksM
 					}
 					ctrl.SetControllerReference(model, newPvc, r.Scheme)
 
-					klog.Infof("model %s/%s: creating model storage (%s)", model.Namespace, model.Name)
+					klog.Infof("model %s/%s: creating model storage (%s)", model.Namespace, model.Name, pvc.Name)
 					if _, err := r.KubeClient.CoreV1().PersistentVolumeClaims(model.Namespace).Create(ctx, newPvc, metav1.CreateOptions{}); err != nil {
 						if !apierrors.IsAlreadyExists(err) {
 							updateModelCondition(model, arksv1.ArksModelStorageCreated, corev1.ConditionFalse, "BoundFailed", fmt.Sprintf("Failed to create storage volume (%s/%s): %q", model.Namespace, pvc.Name, err))
