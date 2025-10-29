@@ -79,11 +79,13 @@ func (r *ArksModelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return r.remove(ctx, model)
 	}
 
+	patch := client.MergeFrom(model.DeepCopy())
+
 	// reconcile model
 	result, err := r.reconcile(ctx, model)
 
 	// update application status
-	if err := r.Client.Status().Update(ctx, model); err != nil {
+	if err := r.Client.Status().Patch(ctx, model, patch); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to update status for %s/%s (%s): %q", model.Namespace, model.Name, model.UID, err)
 	}
 
@@ -191,24 +193,27 @@ func (r *ArksModelReconciler) reconcile(ctx context.Context, model *arksv1.ArksM
 						},
 						Spec: pvc.Spec,
 					}
-
 					ctrl.SetControllerReference(model, newPvc, r.Scheme)
+
+					klog.Infof("model %s/%s: creating model storage (%s)", model.Namespace, model.Name)
 					if _, err := r.KubeClient.CoreV1().PersistentVolumeClaims(model.Namespace).Create(ctx, newPvc, metav1.CreateOptions{}); err != nil {
 						if !apierrors.IsAlreadyExists(err) {
 							updateModelCondition(model, arksv1.ArksModelStorageCreated, corev1.ConditionFalse, "BoundFailed", fmt.Sprintf("Failed to create storage volume (%s/%s): %q", model.Namespace, pvc.Name, err))
 							return ctrl.Result{}, fmt.Errorf("failed to create storage volume (%s/%s): %q", model.Namespace, pvc.Name, err)
 						}
 					}
+					klog.Infof("model %s/%s: create model storage (%s) successfully", model.Namespace, model.Name, storagePvcName)
 				} else {
 					return ctrl.Result{}, fmt.Errorf("failed to check storage volume (%s/%s) : %q", model.Namespace, pvc.Name, err)
 				}
 			}
 			updateModelCondition(model, arksv1.ArksModelStorageCreated, corev1.ConditionTrue, "CreateSucceeded", fmt.Sprintf("Create model storage successfully(%s)", pvc.Name))
-			klog.Infof("model %s/%s: create model storage (%s) successfully", model.Namespace, model.Name, storagePvcName)
+			klog.Infof("model %s/%s: storage (%s) is ready", model.Namespace, model.Name, storagePvcName)
 		}
 	} else {
 		model.Status.Phase = string(arksv1.ArksModelPhaseFailed)
 		updateModelCondition(model, arksv1.ArksModelStorageCreated, corev1.ConditionFalse, "CreateFailed", "Failed to create model storage: no storage PVC specified")
+		klog.Errorf("model %s/%s: create model storage failed: no model storage PVC specified", model.Namespace, model.Name)
 		return ctrl.Result{}, nil
 	}
 
@@ -358,6 +363,7 @@ func (r *ArksModelReconciler) reconcile(ctx context.Context, model *arksv1.ArksM
 	if !checkModelCondition(model, arksv1.ArksModelReady) {
 		model.Status.Phase = string(arksv1.ArksModelPhaseReady)
 		updateModelCondition(model, arksv1.ArksModelReady, corev1.ConditionTrue, "Ready", "The model is ready now")
+		klog.Infof("model %s/%s: model is ready", model.Namespace, model.Name)
 	}
 
 	return ctrl.Result{}, nil

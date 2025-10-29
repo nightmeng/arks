@@ -87,11 +87,13 @@ func (r *ArksDisaggregatedApplicationReconciler) Reconcile(ctx context.Context, 
 		return r.remove(ctx, application)
 	}
 
+	patch := client.MergeFrom(application)
+
 	// reconcile model
 	result, err := r.reconcile(ctx, application)
 
 	// update application status
-	if err := r.Client.Status().Update(ctx, application); err != nil {
+	if err := r.Client.Status().Patch(ctx, application, patch); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to update status for application %s/%s (%s): %q", application.Namespace, application.Name, application.UID, err)
 	}
 
